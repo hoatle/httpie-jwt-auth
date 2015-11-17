@@ -29,8 +29,25 @@ class JWTAuthPlugin(AuthPlugin):
     auth_type = 'jwt'
     description = 'Set the right format for JWT auth request'
 
+    @staticmethod
+    def after_loaded():
+        from httpie import cli
+        cli.auth.add_argument(
+            '--token',
+            help="""
+            The jwt token to be used
+            """)
+        cli.auth.add_argument(
+            '--auth-prefix',
+            help="""
+            The jwt auth prefix for Authorization header, default: Bearer
+            """)
+
     def get_auth(self, username, password):
+        token = self.args.token or username
         auth_prefix = 'Bearer'
-        if os.environ.has_key('JWT_AUTH_PREFIX'):
+        if self.args.auth_prefix:
+            auth_prefix = self.args.auth_prefix
+        elif hasattr(os.environ, 'JWT_AUTH_PREFIX'):
             auth_prefix = os.environ['JWT_AUTH_PREFIX']
-        return JWTAuth(username, auth_prefix)
+        return JWTAuth(token, auth_prefix)
